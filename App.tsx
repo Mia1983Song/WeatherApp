@@ -8,7 +8,6 @@ import AppNavigator from './src/navigation/AppNavigator';
 export default function App() {
   return (
     <SafeAreaView style={styles.container}>
-      {/* TODO: 未來可以在這裡加上 Provider，例如 ThemeProvider / ContextProvider */}
       <AppNavigator />
     </SafeAreaView>
   );

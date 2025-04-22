@@ -17,11 +17,13 @@ const API_KEY = 'b2efd7a5092f6c6d0ca57d9f0c3813a1';
 const BASE_URL = 'https://api.openweathermap.org/data/2.5';
 
 // 根據城市名稱獲取天氣資料
-export const getWeatherByCity = async (city: string): Promise<WeatherData> => {
+export const getWeatherByCity = async (city: string): Promise<WeatherData> => { // async：用於宣告一個函數是非同步的，這樣的函數會自動返回一個 Promise
     try {
         const response = await axios.get(
             `${BASE_URL}/weather?q=${city}&units=metric&appid=${API_KEY}&lang=zh_tw`
         );
+
+        console.log(response.data);
 
         return formatWeatherData(response.data);
     } catch (error) {
@@ -39,6 +41,8 @@ export const getWeatherByCoords = async (
         const response = await axios.get(
             `${BASE_URL}/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}&lang=zh_tw`
         );
+
+        console.log(response.data);
 
         return formatWeatherData(response.data);
     } catch (error) {

@@ -7,24 +7,26 @@ import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
-// 定義每個 Tab 對應的參數型別
+// 定義路由參數類型
 export type RootTabParamList = {
     Home: undefined;
     Search: undefined;
     Settings: undefined;
 };
 
-// 建立 Tab 實例
+// 創建 Tab Navigator
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
 export default function AppNavigator() {
     return (
         <NavigationContainer>
+            {/* Tab Navigator（底部選單）結構 */}
             <Tab.Navigator
                 screenOptions={({ route }) => ({
                     tabBarIcon: ({ focused, color, size }) => {
                         let iconName;
 
+                        // 根據路由名稱設定圖示
                         if (route.name === 'Home') {
                             iconName = focused ? 'home' : 'home-outline';
                         } else if (route.name === 'Search') {
@@ -33,11 +35,10 @@ export default function AppNavigator() {
                             iconName = focused ? 'settings' : 'settings-outline';
                         }
 
-                        // 確保 iconName 不為 undefined
                         return <Icon name={iconName || 'help-circle'} size={size} color={color} />;
                     },
-                    tabBarActiveTintColor: '#5091e6',
-                    tabBarInactiveTintColor: 'gray',
+                    tabBarActiveTintColor: '#5091e6', // 選中時的顏色
+                    tabBarInactiveTintColor: 'gray', // 未選中時的顏色
                 })}
             >
                 {/* 各個分頁 */}

@@ -1,97 +1,222 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+## 🛠️ 環境配置
 
-# Getting Started
-
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
-
-## Step 1: Start Metro
-
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
-
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+### 技術棧與版本
+```
+🔷 React: 19.0.0
+🔷 React Native: 0.79.1
+🔷 TypeScript: 5.0.4
+🔶 Node.js: ≥ 18
 ```
 
-## Step 2: Build and run your app
+### 安裝與啟動步驟
+1. **安裝 Node.js** ≥ 18
+2. **安裝 React Native CLI**
+   ```bash
+   npm install -g react-native-cli
+   ```
+3. **建立專案**
+   ```bash
+   npx @react-native-community/cli init YourProjectName
+   ```
+4. **啟動開發環境**
+   - 啟動 Metro bundler
+     ```bash
+     npx react-native start
+     ```
+   - 另一終端機運行 Android 模擬器
+     ```bash
+     npx react-native run-android
+     ```
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+---
 
-### Android
+## 🌦️ WeatherApp 專案概述
 
-```sh
-# Using npm
-npm run android
+### 📝 專案描述
+使用 React Native 開發的天氣應用，專注於提供簡潔、直觀的氣象資訊。支援 Android 平台，採用 TypeScript 進行開發。
 
-# OR using Yarn
-yarn android
+### 📂 專案結構
+
+```
+WeatherApp/
+├── android/                       # Android 專案文件
+│   └── app/
+│       └── build.gradle          # Android 應用程式構建配置，管理依賴、SDK版本與打包設定
+├── src/
+│   ├── api/                      # API 相關功能
+│   │   └── weatherApi.ts         # 天氣 API 介面與功能
+│   ├── components/               # 可重複使用的元件
+│   │   ├── WeatherCard.tsx       # 天氣資訊卡片
+│   │   └── SearchBar.tsx         # 搜尋輸入元件
+│   ├── hooks/                    # 自定義 React Hooks
+│   ├── navigation/               # 導航相關
+│   │   └── AppNavigator.tsx      # 應用程式導航設定
+│   ├── screens/                  # 主要畫面
+│   │   ├── HomeScreen.tsx        # 首頁
+│   │   ├── SearchScreen.tsx      # 搜尋頁面
+│   │   └── SettingsScreen.tsx    # 設定頁面
+│   └── utils/                    # 工具函數
+├── App.tsx                       # 應用程式入口
+├── index.js                      # React Native 入口
+├── package.json                  # 專案依賴配置、腳本命令與版本資訊
+├── tsconfig.json                 # TypeScript 編譯器設定，定義編譯選項與類型檢查規則
+└── metro.config.js               # Metro 打包工具配置，設定模組解析、轉換與打包選項
 ```
 
-### iOS
+### ✨ 主要功能
+- ✓ 查看當前位置的天氣
+- ✓ 搜尋不同城市的天氣資訊
+- ✓ 查看天氣詳情（溫度、濕度、風速等）
+- ✓ 自定義應用程式設定
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+### 🔧 技術棧
+- **React Native** 0.79.1
+- **React Navigation** 7.x
+- **TypeScript** 5.x
+- **Axios** 用於 API 請求
+- **React Native Vector Icons** 圖標套件
+- **React Native Geolocation Service** 定位服務
+- **AsyncStorage** 資料儲存
+- **ESLint + Prettier** 代碼格式化
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+---
 
-```sh
-bundle install
+## 📱 主要畫面實現
+
+### 🏠 HomeScreen
+首頁顯示預設城市（台北）的天氣資訊：
+
+```typescript
+export default function HomeScreen() {
+    const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        const cityName = 'Taipei';
+        try {
+            const data = await getWeatherByCity(cityName);
+            setWeatherData(data);
+        } catch (e) {
+            setError('無法讀取天氣資料');
+        } finally {
+            setLoading(false);
+        }
+    };
+    // ...
+}
 ```
 
-Then, and every time you update your native dependencies, run:
+### 🔍 SearchScreen
+搜尋頁面允許用戶搜尋特定城市的天氣：
 
-```sh
-bundle exec pod install
+```typescript
+export default function SearchScreen() {
+    const [city, setCity] = useState('');
+    const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleSearch = async () => {
+        if (!city.trim()) {
+            setError('請輸入城市名稱');
+            return;
+        }
+        
+        setLoading(true);
+        setError(null);
+        
+        try {
+            const data = await getWeatherByCity(city.trim());
+            setWeatherData(data);
+            Keyboard.dismiss(); // 成功搜尋後收起鍵盤
+        } catch (e) {
+            setError('搜尋失敗，請稍後再試');
+            setWeatherData(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+    // ...
+}
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+### 📊 資料模型與 API 服務
 
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+#### WeatherData 介面
+```typescript
+export interface WeatherData {
+    city: string,
+    country: string,
+    temperature: number,
+    description: string,
+    icon: string,
+    feelsLike: number,
+    humidity: number,
+    windSpeed: number,
+    date: string
+}
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+#### weatherApi.ts 服務
+```typescript
+import axios from "axios";
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+// API 配置
+const API_KEY = 'b2efd7a5092f6c6d0ca57d9f0c3813a1';
+const BASE_URL = 'https://api.openweathermap.org/data/2.5';
 
-## Step 3: Modify your app
+// 根據城市名稱獲取天氣資料
+export const getWeatherByCity = async (city: string): Promise<WeatherData> => {
+    try {
+        const response = await axios.get(
+            `${BASE_URL}/weather?q=${city}&units=metric&appid=${API_KEY}&lang=zh_tw`
+        );
+        return formatWeatherData(response.data);
+    } catch (error) {
+        console.error('獲取城市天氣時出錯:', error);
+        throw error;
+    }
+};
 
-Now that you have successfully run the app, let's make changes!
+// 根據經緯度獲取天氣資料
+export const getWeatherByCoords = async (lat: number, lon: number): Promise<WeatherData> => {
+    try {
+        const response = await axios.get(
+            `${BASE_URL}/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}&lang=zh_tw`
+        );
+        return formatWeatherData(response.data);
+    } catch (error) {
+        console.error('獲取位置天氣時出錯:', error);
+        throw error;
+    }
+};
+```
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+---
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+## 🚀 功能完善計畫
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+### 🎨 UI/UX 優化
 
-## Congratulations! :tada:
+| 元件 | 運用位置 | 功能設計建議 |
+|:-----|:---------|:------------|
+| `KeyboardAvoidingView` | `SearchScreen` | 鍵盤彈出時自動避開輸入欄位 |
+| `Platform` | `SettingsScreen` | 根據平台（iOS/Android）顯示不同設定內容 |
+| `TouchableOpacity` | `WeatherCard` | 增加點擊互動，未來可擴展跳轉詳細頁 |
+| `ActivityIndicator` | `HomeScreen` / `SearchScreen` | 資料抓取或搜尋時顯示轉圈圈 Loading 狀態 |
 
-You've successfully run and modified your React Native App. :partying_face:
+### 📍 改進位置服務（Geolocation）
+- 使用 `react-native-geolocation-service` 取得用戶當前位置
+- 處理 iOS / Android 定位權限申請
+- 讀取座標後，自動查詢並更新天氣資訊
+- 針對錯誤情境設置提示（如拒絕授權、定位失敗）
 
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+### 💾 資料持久化（AsyncStorage）
+- 儲存最近搜尋過的城市列表，提升搜尋體驗
+- 儲存預設城市設定，開啟 App 自動載入
+- 未來可加入「清除搜尋歷史」功能選項
