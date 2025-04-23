@@ -15,16 +15,25 @@ export default function HomeScreen() {
     // 3.Component 卸載（Unmount）時，清理（Cleanup）資源（例如解除監聽、清除 timer）
     // 第二個參數是依賴陣列，控制重新執行的時機
 
-    // 元件掛載後執行一次（類似 componentDidMount）
+    // 元件掛載 (componentDidMount)
     useEffect(() => {
         console.log('元件掛載完成');
 
         fetchData();
 
+        // 元件卸載 (componentWillUnmount)
         return () => {
-            console.log('元件卸載時清理');
+            console.log('元件即將卸載');
+            // 清理訂閱、計時器等資源
         };
-    }, []); // 空陣列 = 僅在掛載時執行一次
+    }, []); // 空依賴陣列表示只執行一次
+
+    // 資料更新 (componentDidUpdate)
+    useEffect(() => {
+        if (weatherData) {
+            console.log('資料已更新:', weatherData);
+        }
+    }, [weatherData]); // 依賴於 weatherData，當 weatherData 變化時執行
 
     const fetchData = async () => {
         const cityName = 'Taipei';
