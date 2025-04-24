@@ -1,13 +1,20 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { getWeatherByCity, WeatherData } from '../api/weatherApi';
 import WeatherCard from '../components/WeatherCard';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { HomeStackParamList } from '../navigation/HomeStack';
+
+// 定義導航 props 類型
+type HomeScreenNavigationProp = NavigationProp<HomeStackParamList, 'Home'>;
 
 export default function HomeScreen() {
     // [currentValue, setterFunction] = useState(initValue)
     const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    // 獲取導航對象
+    const navigation = useNavigation<HomeScreenNavigationProp>();
 
     // useEffect 主要用途：
     // 1.Component 初始化 時做某些事（比如從 API 抓資料）
@@ -52,6 +59,26 @@ export default function HomeScreen() {
         }
     };
 
+    // 跳轉到詳情頁面
+    const handleViewDetails = () => {
+        if (weatherData) {
+            navigation.navigate('WeatherDetail', {
+                cityId: weatherData.city.toLowerCase(),
+                cityName: weatherData.city
+            });
+        }
+    };
+
+    // 跳轉到預報頁面
+    const handleViewForecast = () => {
+        if (weatherData) {
+            navigation.navigate('Forecast', {
+                cityId: weatherData.city.toLowerCase(),
+                cityName: weatherData.city
+            });
+        }
+    };
+
     return (
         <View style={styles.container}>
             <Text style={styles.text}>首頁</Text>
@@ -59,6 +86,21 @@ export default function HomeScreen() {
             {/* Conditional Rendering */}
             {error && <Text style={styles.error}>{error}</Text>}
             {weatherData ? <WeatherCard weatherData={weatherData} /> : null}
+            <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={handleViewDetails}
+                >
+                    <Text style={styles.buttonText}>查看詳細資訊</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={handleViewForecast}
+                >
+                    <Text style={styles.buttonText}>查看未來預報</Text>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 }
@@ -77,5 +119,22 @@ const styles = StyleSheet.create({
     },
     error: {
         color: 'red'
+    },
+    buttonContainer: {
+        marginTop: 20,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    button: {
+        backgroundColor: '#007AFF',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        flex: 1,
+        marginHorizontal: 5,
+    },
+    buttonText: {
+        color: 'white',
+        fontWeight: '600',
     }
 });
