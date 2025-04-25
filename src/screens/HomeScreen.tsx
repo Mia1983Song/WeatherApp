@@ -1,7 +1,12 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { getWeatherByCity, WeatherData } from '../api/weatherApi'
 import WeatherCard from '../components/WeatherCard'
+import { NavigationProp, useNavigation } from '@react-navigation/native'
+import { HomeStackParamList } from '../navigation/HomeStack'
+
+// 定義導航 props 類型
+type HomeScreenNavigationProp = NavigationProp<HomeStackParamList, 'Home'>
 
 export default function HomeScreen() {
   // [currentValue, setterFunction] = useState(initValue)
