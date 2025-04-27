@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Modal,
   FlatList,
+  TouchableWithoutFeedback,
 } from 'react-native'
 import { useSettings } from '../contexts/SettingsContext'
 import { TemperatureUnit, AVAILABLE_CITIES, City } from '../types/settings'
@@ -23,6 +24,10 @@ export default function SettingsScreen() {
   } = useSettings()
 
   const [cityModalVisible, setCityModalVisible] = useState(false)
+
+  const closeCityModal = () => {
+    setCityModalVisible(false)
+  }
 
   // 切換溫度單位
   const toggleTemperatureUnit = async () => {
@@ -117,45 +122,50 @@ export default function SettingsScreen() {
         animationType='slide'
         transparent={true}
         visible={cityModalVisible}
-        onRequestClose={() => setCityModalVisible(false)}
+        onRequestClose={closeCityModal}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>選擇預設城市</Text>
+        <TouchableWithoutFeedback onPress={closeCityModal}>
+          <View style={styles.modalContainer}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>選擇預設城市</Text>
 
-            <FlatList
-              data={AVAILABLE_CITIES}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
+                <FlatList
+                  data={AVAILABLE_CITIES}
+                  keyExtractor={(item) => item.id}
+                  keyboardShouldPersistTaps='handled'
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.cityItem,
+                        item.id === settings.defaultCity.id &&
+                          styles.selectedCityItem,
+                      ]}
+                      onPress={() => selectCity(item)}
+                    >
+                      <Text
+                        style={[
+                          styles.cityItemText,
+                          item.id === settings.defaultCity.id &&
+                            styles.selectedCityText,
+                        ]}
+                      >
+                        {item.name}, {item.country}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                />
+
                 <TouchableOpacity
-                  style={[
-                    styles.cityItem,
-                    item.id === settings.defaultCity.id &&
-                      styles.selectedCityItem,
-                  ]}
-                  onPress={() => selectCity(item)}
+                  style={styles.closeButton}
+                  onPress={closeCityModal}
                 >
-                  <Text
-                    style={[
-                      styles.cityItemText,
-                      item.id === settings.defaultCity.id &&
-                        styles.selectedCityText,
-                    ]}
-                  >
-                    {item.name}, {item.country}
-                  </Text>
+                  <Text style={styles.closeButtonText}>取消</Text>
                 </TouchableOpacity>
-              )}
-            />
-
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setCityModalVisible(false)}
-            >
-              <Text style={styles.closeButtonText}>取消</Text>
-            </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </ScrollView>
   )
