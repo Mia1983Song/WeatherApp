@@ -35,7 +35,7 @@ export default function HomeScreen() {
     loading: locationLoading,
     error: locationError,
     requestLocation,
-  } = useLocation()
+  } = useLocation(true) // 自動請求位置
 
   // 獲取導航對象
   const navigation = useNavigation<HomeScreenNavigationProp>()
