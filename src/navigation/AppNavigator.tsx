@@ -1,14 +1,14 @@
 import React from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import Icon from 'react-native-vector-icons/Ionicons'
+import { NavigatorScreenParams } from '@react-navigation/native'
 
 // 引入 HomeStack - 這是一個使用 Stack Navigator 的巢狀導航組件
 // 允許在首頁標籤內有多個頁面可以堆疊導航
 import HomeStack, { HomeStackParamList } from './HomeStack'
-//import HomeScreen from '../screens/HomeScreen'
+//import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen'
 import SettingsScreen from '../screens/SettingsScreen'
-import { NavigatorScreenParams } from '@react-navigation/native'
 
 // 集中定義導航路由及其所需參數
 export type RootTabParamList = {

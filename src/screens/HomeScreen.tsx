@@ -1,86 +1,240 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+  Alert,
+} from 'react-native'
 import React, { useEffect, useState } from 'react'
-import { getWeatherByCity, WeatherData } from '../api/weatherApi'
+import {
+  getWeatherByCity,
+  getWeatherByCoords,
+  WeatherData,
+} from '../api/weatherApi'
 import WeatherCard from '../components/WeatherCard'
 import { NavigationProp, useNavigation } from '@react-navigation/native'
 import { HomeStackParamList } from '../navigation/HomeStack'
+import useLocation from '../hooks/useLocation' // 1-1. 引入 useLocation Hook
 
 // 定義導航 props 類型
 type HomeScreenNavigationProp = NavigationProp<HomeStackParamList, 'Home'>
 
 export default function HomeScreen() {
-  // [currentValue, setterFunction] = useState(initValue)
+  // 基本狀態
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // 1-2. 位置相關狀態
+  const [usingCurrentLocation, setUsingCurrentLocation] =
+    useState<boolean>(false)
 
-  // useEffect 主要用途：
-  // 1.Component 初始化 時做某些事（比如從 API 抓資料）
-  // 2.特定狀態（State）變更時，觸發副作用（Side Effect）
-  // 3.Component 卸載（Unmount）時，清理（Cleanup）資源（例如解除監聽、清除 timer）
-  // 第二個參數是依賴陣列，控制重新執行的時機
+  // 1-3. 使用位置 Hook
+  const {
+    location,
+    loading: locationLoading,
+    error: locationError,
+    requestLocation,
+  } = useLocation()
 
-  // 元件掛載 (componentDidMount)
+  // 獲取導航對象
+  const navigation = useNavigation<HomeScreenNavigationProp>()
+
   useEffect(() => {
-    console.log('元件掛載完成')
-
+    // 初始載入或位置/模式變化時獲取數據
     fetchData()
 
-    // 元件卸載 (componentWillUnmount)
+    // 元件卸載 (componentWillUnmount)時，可以在這裡添加回傳函數進行清理
     return () => {
-      console.log('元件即將卸載')
-      // 清理訂閱、計時器等資源
+      // 例如：取消未完成的請求等
     }
-  }, []) // 空依賴陣列表示只執行一次
+  }, [location, usingCurrentLocation])
 
-  // 資料更新 (componentDidUpdate)
-  useEffect(() => {
-    if (weatherData) {
-      console.log('資料已更新:', weatherData)
-    }
-  }, [weatherData]) // 依賴於 weatherData，當 weatherData 變化時執行
-
+  // 2-1. 資料獲取函數
   const fetchData = async () => {
-    const cityName = 'Taipei'
+    setLoading(true)
+    setError(null)
 
     try {
-      const data = await getWeatherByCity(cityName)
+      let data
+
+      if (location && usingCurrentLocation) {
+        // 使用當前位置獲取天氣資料
+        console.log(
+          `使用當前位置獲取天氣：${location.latitude}, ${location.longitude}`
+        )
+        data = await getWeatherByCoords(location.latitude, location.longitude)
+      } else {
+        // 使用預設城市
+        const cityName = 'Taipei'
+        console.log(`使用預設城市獲取天氣：${cityName}`)
+        data = await getWeatherByCity(cityName)
+      }
+
       if (data) {
         setWeatherData(data)
       } else {
-        console.log('No Data')
+        setError('獲取天氣資料失敗')
       }
     } catch (e) {
+      console.error('獲取天氣資料出錯:', e)
       setError('無法讀取天氣資料')
     } finally {
       setLoading(false)
     }
   }
 
+  // 1-3. 切換位置模式
+  const toggleLocationMode = () => {
+    if (!usingCurrentLocation) {
+      if (location) {
+        setUsingCurrentLocation(true)
+      } else if (locationError) {
+        Alert.alert(
+          '位置服務錯誤',
+          `無法獲取您的位置：${locationError}\n要再試一次嗎？`,
+          [
+            { text: '取消', style: 'cancel' },
+            {
+              text: '再試一次',
+              onPress: () => {
+                requestLocation()
+                setUsingCurrentLocation(true)
+              },
+            },
+          ]
+        )
+      } else {
+        requestLocation()
+        setUsingCurrentLocation(true)
+      }
+    } else {
+      setUsingCurrentLocation(false)
+    }
+  }
+
+  // 跳轉到詳情頁面
+  const handleViewDetails = () => {
+    if (weatherData) {
+      navigation.navigate('WeatherDetail', {
+        cityId: weatherData.city.toLowerCase(),
+        cityName: weatherData.city,
+      })
+    }
+  }
+
+  // 跳轉到預報頁面
+  const handleViewForecast = () => {
+    if (weatherData) {
+      navigation.navigate('Forecast', {
+        cityId: weatherData.city.toLowerCase(),
+        cityName: weatherData.city,
+      })
+    }
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>首頁</Text>
+      <Text style={styles.title}>天氣資訊</Text>
 
-      {/* Conditional Rendering */}
-      {error && <Text style={styles.error}>{error}</Text>}
-      {weatherData ? <WeatherCard weatherData={weatherData} /> : null}
+      {/* 1-3. 位置切換按鈕 */}
+      <TouchableOpacity
+        style={styles.locationButton}
+        onPress={toggleLocationMode}
+      >
+        <Text>{usingCurrentLocation ? '使用當前位置' : '使用預設城市'}</Text>
+      </TouchableOpacity>
+
+      {/* 3-1. 載入中提示 */}
+      {(loading || (locationLoading && usingCurrentLocation)) && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size='large' color='#007AFF' />
+          <Text>
+            {locationLoading && usingCurrentLocation
+              ? '正在取得位置...'
+              : '載入天氣資料...'}
+          </Text>
+        </View>
+      )}
+
+      {/* 3-2. 錯誤提示 */}
+      {(error || (locationError && usingCurrentLocation)) &&
+        !loading &&
+        !locationLoading && (
+          <View>
+            <Text style={styles.error}>
+              {usingCurrentLocation && locationError ? locationError : error}
+            </Text>
+            <TouchableOpacity onPress={fetchData}>
+              <Text>重試</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+      {/* 天氣卡片 */}
+      {weatherData && !loading && !locationLoading && (
+        <WeatherCard weatherData={weatherData} />
+      )}
+
+      {/* 詳情和預報按鈕 */}
+      {weatherData && !loading && (
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.button} onPress={handleViewDetails}>
+            <Text style={styles.buttonText}>查看詳細資訊</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.button} onPress={handleViewForecast}>
+            <Text style={styles.buttonText}>查看未來預報</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   )
 }
 
-// 樣式
+// 保留原有樣式，僅添加必要的新樣式
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
+    padding: 16,
   },
-  text: {
+  title: {
     fontSize: 24,
     fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  locationButton: {
+    padding: 10,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
   },
   error: {
     color: 'red',
+    marginBottom: 10,
+  },
+  buttonContainer: {
+    marginTop: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  button: {
+    backgroundColor: '#007AFF',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: '600',
   },
 })
