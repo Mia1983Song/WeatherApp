@@ -15,7 +15,9 @@ import {
 import WeatherCard from '../components/WeatherCard'
 import { NavigationProp, useNavigation } from '@react-navigation/native'
 import { HomeStackParamList } from '../navigation/HomeStack'
-import useLocation from '../hooks/useLocation' // 1-1. 引入 useLocation Hook
+import useLocation from '../hooks/useLocation'
+import { useSettings } from '../contexts/SettingsContext'
+import { TemperatureUnit } from '../types/settings'
 
 // 定義導航 props 類型
 type HomeScreenNavigationProp = NavigationProp<HomeStackParamList, 'Home'>
@@ -25,33 +27,55 @@ export default function HomeScreen() {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  // 1-2. 位置相關狀態
-  const [usingCurrentLocation, setUsingCurrentLocation] =
-    useState<boolean>(false)
 
-  // 1-3. 使用位置 Hook
+  // 獲取設定
+  const { settings } = useSettings()
+
+  // 位置相關狀態 - 使用設定中的預設值
+  const [usingCurrentLocation, setUsingCurrentLocation] = useState<boolean>(
+    settings.useCurrentLocationByDefault
+  )
+
+  // 使用位置 Hook - 根據設定決定是否自動請求
   const {
     location,
     loading: locationLoading,
     error: locationError,
     requestLocation,
-  } = useLocation(true) // 自動請求位置
+  } = useLocation(settings.useCurrentLocationByDefault)
 
   // 獲取導航對象
   const navigation = useNavigation<HomeScreenNavigationProp>()
 
+  // 元件掛載時檢查設定
   useEffect(() => {
-    // 初始載入或位置/模式變化時獲取數據
+    // 當設定變更時，更新位置使用模式
+    setUsingCurrentLocation(settings.useCurrentLocationByDefault)
+  }, [settings.useCurrentLocationByDefault])
+
+  // 當位置狀態或設定變更時獲取天氣資料
+  useEffect(() => {
     fetchData()
 
-    // 元件卸載 (componentWillUnmount)時，可以在這裡添加回傳函數進行清理
     return () => {
-      // 例如：取消未完成的請求等
+      // 清理工作（如果需要）
     }
-  }, [location, usingCurrentLocation])
+  }, [
+    location,
+    usingCurrentLocation,
+    settings.defaultCity,
+    settings.temperatureUnit,
+  ])
 
-  // 2-1. 資料獲取函數
+  // 攝氏轉華氏的輔助函數
+  const celsiusToFahrenheit = (celsius: number): number => {
+    return Math.round((celsius * 9) / 5 + 32)
+  }
+
+  // 資料獲取函數
   const fetchData = async () => {
+    //if (loading) return // 避免重複請求
+
     setLoading(true)
     setError(null)
 
@@ -66,9 +90,20 @@ export default function HomeScreen() {
         data = await getWeatherByCoords(location.latitude, location.longitude)
       } else {
         // 使用預設城市
-        const cityName = 'Taipei'
+        const cityName = settings.defaultCity.name
         console.log(`使用預設城市獲取天氣：${cityName}`)
         data = await getWeatherByCity(cityName)
+      }
+
+      // 轉換溫度單位（如果需要）
+      if (settings.temperatureUnit === TemperatureUnit.FAHRENHEIT && data) {
+        // 轉換溫度單位
+        data.temperature = celsiusToFahrenheit(data.temperature)
+        data.feelsLike = celsiusToFahrenheit(data.feelsLike)
+        // 設定單位標記
+        data.temperatureUnit = '°F'
+      } else if (data) {
+        data.temperatureUnit = '°C'
       }
 
       if (data) {
@@ -84,7 +119,7 @@ export default function HomeScreen() {
     }
   }
 
-  // 1-3. 切換位置模式
+  // 切換位置模式
   const toggleLocationMode = () => {
     if (!usingCurrentLocation) {
       if (location) {
@@ -137,7 +172,7 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>天氣資訊</Text>
 
-      {/* 1-3. 位置切換按鈕 */}
+      {/* 位置切換按鈕 */}
       <TouchableOpacity
         style={styles.locationButton}
         onPress={toggleLocationMode}
@@ -145,7 +180,14 @@ export default function HomeScreen() {
         <Text>{usingCurrentLocation ? '使用當前位置' : '使用預設城市'}</Text>
       </TouchableOpacity>
 
-      {/* 3-1. 載入中提示 */}
+      {/* 顯示當前使用的預設城市 */}
+      {!usingCurrentLocation && (
+        <Text style={styles.cityInfo}>
+          預設城市: {settings.defaultCity.name}, {settings.defaultCity.country}
+        </Text>
+      )}
+
+      {/* 載入中提示 */}
       {(loading || (locationLoading && usingCurrentLocation)) && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size='large' color='#007AFF' />
@@ -157,7 +199,7 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* 3-2. 錯誤提示 */}
+      {/* 錯誤提示 */}
       {(error || (locationError && usingCurrentLocation)) &&
         !loading &&
         !locationLoading && (
@@ -171,9 +213,14 @@ export default function HomeScreen() {
           </View>
         )}
 
-      {/* 天氣卡片 */}
+      {/* 天氣卡片 - 傳遞溫度單位 */}
       {weatherData && !loading && !locationLoading && (
-        <WeatherCard weatherData={weatherData} />
+        <WeatherCard
+          weatherData={weatherData}
+          temperatureUnit={
+            settings.temperatureUnit === TemperatureUnit.CELSIUS ? '°C' : '°F'
+          }
+        />
       )}
 
       {/* 詳情和預報按鈕 */}
@@ -210,6 +257,11 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#e0e0e0',
     borderRadius: 8,
+    marginBottom: 16,
+  },
+  cityInfo: {
+    fontSize: 14,
+    color: '#666',
     marginBottom: 16,
   },
   loadingContainer: {

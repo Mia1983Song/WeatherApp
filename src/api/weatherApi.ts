@@ -9,6 +9,7 @@ export interface WeatherData {
   humidity: number
   windSpeed: number
   date: string
+  temperatureUnit?: string // 新增的溫度單位屬性
 }
 
 const API_KEY = 'b2efd7a5092f6c6d0ca57d9f0c3813a1'
