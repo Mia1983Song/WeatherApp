@@ -35,9 +35,7 @@ interface SettingsProviderProps {
   children: ReactNode
 }
 
-export const SettingsProvider: React.FC<SettingsProviderProps> = ({
-  children,
-}) => {
+export function SettingsProvider({ children }: SettingsProviderProps) {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [isLoading, setIsLoading] = useState<boolean>(true)
 
