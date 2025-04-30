@@ -1,10 +1,4 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  ActivityIndicator,
-} from 'react-native'
+import { StyleSheet, Text, View, ScrollView } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { HomeStackParamList } from '../navigation/HomeStack'
@@ -17,7 +11,8 @@ import {
 } from '../utils/responsive'
 import { getWeatherDetail, WeatherDetailData } from '../api/weatherApi'
 import { useSettings } from '../contexts/SettingsContext'
-import { TemperatureUnit } from '../types/settings'
+import { applyTemperatureUnit } from '../utils/temperatureUtils'
+import StatusDisplay from '../components/common/StatusDisplay'
 
 type WeatherDetailRouteProp = RouteProp<HomeStackParamList, 'WeatherDetail'>
 
@@ -44,7 +39,12 @@ export default function WeatherDetailScreen() {
       setLoading(true)
       try {
         const data = await getWeatherDetail(cityName)
-        setDetailData(data)
+        // 使用 applyTemperatureUnit 處理溫度單位
+        const processedData = applyTemperatureUnit(
+          data,
+          settings.temperatureUnit
+        )
+        setDetailData(processedData)
         setError(null)
       } catch (err) {
         console.error('獲取詳細資料失敗:', err)
@@ -55,7 +55,7 @@ export default function WeatherDetailScreen() {
     }
 
     fetchDetailData()
-  }, [cityId])
+  }, [cityId, settings.temperatureUnit]) // 也監聽溫度單位變化
 
   // 格式化時間
   const formatTime = (timestamp: number) => {
@@ -63,14 +63,6 @@ export default function WeatherDetailScreen() {
       hour: '2-digit',
       minute: '2-digit',
     })
-  }
-
-  // 根據溫度單位轉換溫度
-  const formatTemperature = (celsius: number) => {
-    if (settings.temperatureUnit === TemperatureUnit.FAHRENHEIT) {
-      return `${Math.round((celsius * 9) / 5 + 32)}°F`
-    }
-    return `${Math.round(celsius)}°C`
   }
 
   // 取得 UV 指數描述
@@ -82,98 +74,68 @@ export default function WeatherDetailScreen() {
     return '極端 (避免外出)'
   }
 
-  // 載入中顯示
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size='large' color='#007AFF' />
-        <Text style={styles.loadingText}>載入天氣詳情中...</Text>
-      </View>
-    )
-  }
-
-  // 錯誤顯示
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
-    )
-  }
-
-  // 無資料
-  if (!detailData) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>無法取得天氣詳情</Text>
-      </View>
-    )
-  }
-
-  // 構建詳情項目
-  const detailItems = [
+  // 構建詳情項目函數 (只有在資料存在時調用)
+  const buildDetailItems = (data: WeatherDetailData) => [
     {
       label: '日出時間',
-      value: formatTime(detailData.sunrise),
+      value: formatTime(data.sunrise),
       icon: '🌅',
     },
     {
       label: '日落時間',
-      value: formatTime(detailData.sunset),
+      value: formatTime(data.sunset),
       icon: '🌇',
     },
     {
       label: '溫度',
-      value: `${formatTemperature(
-        detailData.temperature
-      )} (體感 ${formatTemperature(detailData.feelsLike)})`,
+      value: `${data.temperature}${data.temperatureUnit} (體感 ${data.feelsLike}${data.temperatureUnit})`,
       icon: '🌡️',
     },
     {
       label: '濕度',
-      value: `${detailData.humidity}%`,
+      value: `${data.humidity}%`,
       icon: '💧',
     },
     {
       label: '大氣壓力',
-      value: `${detailData.pressure} hPa`,
+      value: `${data.pressure} hPa`,
       icon: '🔄',
     },
     {
       label: '能見度',
-      value: `${detailData.visibility / 1000} 公里`,
+      value: `${data.visibility / 1000} 公里`,
       icon: '👁️',
     },
     {
       label: '雲量',
-      value: `${detailData.clouds}%`,
+      value: `${data.clouds}%`,
       icon: '☁️',
     },
     {
       label: '風速',
-      value: `${detailData.windSpeed} m/s`,
+      value: `${data.windSpeed} m/s`,
       icon: '💨',
     },
     {
       label: '紫外線指數',
-      value: `${detailData.uvi} (${getUVIDescription(detailData.uvi)})`,
+      value: `${data.uvi} (${getUVIDescription(data.uvi)})`,
       icon: '☀️',
     },
     // 條件性增加降雨/降雪數據
-    ...(detailData.rain && detailData.rain['1h']
+    ...(data.rain && data.rain['1h']
       ? [
           {
             label: '過去1小時降雨量',
-            value: `${detailData.rain['1h']} mm`,
+            value: `${data.rain['1h']} mm`,
             icon: '🌧️',
           },
         ]
       : []),
-    ...(detailData.snow && detailData.snow['1h']
+    ...(data.snow && data.snow['1h']
       ? [
           {
             label: '過去1小時降雪量',
-            value: `${detailData.snow['1h']} mm`,
+            value: `${data.snow['1h']} mm`,
             icon: '❄️',
           },
         ]
@@ -187,64 +149,74 @@ export default function WeatherDetailScreen() {
         { paddingHorizontal: scale(isSmallDevice ? 12 : 16) },
       ]}
     >
-      <View style={styles.container}>
-        <Text
-          style={[
-            styles.title,
-            { fontSize: responsiveFontSize(isSmallDevice ? 22 : 24) },
-          ]}
-        >
-          {cityName} 天氣詳情
-        </Text>
+      {/* 使用 StatusDisplay 顯示載入和錯誤狀態 */}
+      <StatusDisplay
+        isLoading={loading}
+        error={error}
+        loadingMessage='載入天氣詳情中...'
+      />
 
-        <View style={styles.mainInfoContainer}>
-          <Text style={styles.condition}>{detailData.description}</Text>
-          <Text style={styles.mainTemp}>
-            {formatTemperature(detailData.temperature)}
+      {!loading && !error && detailData && (
+        <View style={styles.container}>
+          <Text
+            style={[
+              styles.title,
+              { fontSize: responsiveFontSize(isSmallDevice ? 22 : 24) },
+            ]}
+          >
+            {cityName} 天氣詳情
+          </Text>
+
+          <View style={styles.mainInfoContainer}>
+            <Text style={styles.condition}>{detailData.description}</Text>
+            <Text style={styles.mainTemp}>
+              {detailData.temperature}
+              {detailData.temperatureUnit}
+            </Text>
+          </View>
+
+          {/* 根據屏幕方向調整詳情區域的佈局 */}
+          <View
+            style={[
+              styles.detailsContainer,
+              isLandscape && {
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                justifyContent: 'space-around',
+              },
+            ]}
+          >
+            {buildDetailItems(detailData).map((item, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.detailCard,
+                  isLandscape && {
+                    width: isLargeDevice ? '30%' : '45%',
+                    marginHorizontal: scale(8),
+                  },
+                ]}
+              >
+                <View style={styles.iconContainer}>
+                  <Text style={styles.icon}>{item.icon}</Text>
+                </View>
+                <View style={styles.detailTextContainer}>
+                  <Text style={styles.detailLabel}>{item.label}</Text>
+                  <Text style={styles.detailValue}>{item.value}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <Text style={styles.note}>
+            資料最後更新時間:{' '}
+            {new Date().toLocaleDateString('zh-TW', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
           </Text>
         </View>
-
-        {/* 根據屏幕方向調整詳情區域的佈局 */}
-        <View
-          style={[
-            styles.detailsContainer,
-            isLandscape && {
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              justifyContent: 'space-around',
-            },
-          ]}
-        >
-          {detailItems.map((item, index) => (
-            <View
-              key={index}
-              style={[
-                styles.detailCard,
-                isLandscape && {
-                  width: isLargeDevice ? '30%' : '45%',
-                  marginHorizontal: scale(8),
-                },
-              ]}
-            >
-              <View style={styles.iconContainer}>
-                <Text style={styles.icon}>{item.icon}</Text>
-              </View>
-              <View style={styles.detailTextContainer}>
-                <Text style={styles.detailLabel}>{item.label}</Text>
-                <Text style={styles.detailValue}>{item.value}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        <Text style={styles.note}>
-          資料最後更新時間:{' '}
-          {new Date().toLocaleDateString('zh-TW', {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </Text>
-      </View>
+      )}
     </ScrollView>
   )
 }
@@ -258,29 +230,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     alignItems: 'center',
     paddingVertical: scale(16),
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-  },
-  loadingText: {
-    marginTop: scale(12),
-    fontSize: responsiveFontSize(16),
-    color: '#757575',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    padding: scale(20),
-  },
-  errorText: {
-    fontSize: responsiveFontSize(16),
-    color: '#d32f2f',
-    textAlign: 'center',
   },
   title: {
     fontWeight: 'bold',
