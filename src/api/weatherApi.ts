@@ -12,55 +12,19 @@ export interface WeatherData {
   temperatureUnit?: string // 新增的溫度單位屬性
 }
 
+export interface WeatherDetailData extends WeatherData {
+  sunrise: number // 日出時間 (UNIX 時間戳)
+  sunset: number // 日落時間 (UNIX 時間戳)
+  pressure: number // 大氣壓力 (hPa)
+  visibility: number // 能見度 (公尺)
+  clouds: number // 雲量 (%)
+  uvi: number // 紫外線指數
+  rain?: { '1h'?: number; '3h'?: number } // 降雨量 (mm)
+  snow?: { '1h'?: number; '3h'?: number } // 降雪量 (mm)
+}
+
 const API_KEY = 'b2efd7a5092f6c6d0ca57d9f0c3813a1'
 const BASE_URL = 'https://api.openweathermap.org/data/2.5'
-
-// 根據城市名稱獲取天氣資料
-export const getWeatherByCity = async (city: string): Promise<WeatherData> => {
-  try {
-    const response = await fetch(
-      `${BASE_URL}/weather?q=${city}&units=metric&appid=${API_KEY}&lang=zh_tw`
-    )
-
-    // 檢查回應狀態
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`)
-    }
-
-    const data = await response.json()
-    console.log(data)
-
-    return formatWeatherData(data)
-  } catch (error) {
-    console.error('獲取城市天氣時出錯:', error)
-    throw error
-  }
-}
-
-// 根據經緯度獲取天氣資料
-export const getWeatherByCoords = async (
-  lat: number,
-  lon: number
-): Promise<WeatherData> => {
-  try {
-    const response = await fetch(
-      `${BASE_URL}/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}&lang=zh_tw`
-    )
-
-    // 檢查回應狀態
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`)
-    }
-
-    const data = await response.json()
-    console.log(data)
-
-    return formatWeatherData(data)
-  } catch (error) {
-    console.error('獲取位置天氣時出錯:', error)
-    throw error
-  }
-}
 
 // 格式化 API 返回的數據
 const formatWeatherData = (data: any): WeatherData => {
@@ -77,36 +41,42 @@ const formatWeatherData = (data: any): WeatherData => {
   }
 }
 
-export interface WeatherDetailData extends WeatherData {
-  sunrise: number // 日出時間 (UNIX 時間戳)
-  sunset: number // 日落時間 (UNIX 時間戳)
-  pressure: number // 大氣壓力 (hPa)
-  visibility: number // 能見度 (公尺)
-  clouds: number // 雲量 (%)
-  uvi: number // 紫外線指數
-  rain?: { '1h'?: number; '3h'?: number } // 降雨量 (mm)
-  snow?: { '1h'?: number; '3h'?: number } // 降雪量 (mm)
-}
-
-// 獲取指定城市的詳細天氣資料
-export const getWeatherDetail = async (
-  city: string
-): Promise<WeatherDetailData> => {
+// 統一 API 請求處理
+const fetchWeatherData = async (url: string): Promise<any> => {
   try {
-    const response = await fetch(
-      `${BASE_URL}/weather?q=${city}&units=metric&appid=${API_KEY}&lang=zh_tw`
-    )
+    const response = await fetch(url)
 
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error('API 錯誤回應:', errorText)
       throw new Error(`HTTP error! Status: ${response.status}`)
     }
 
     const data = await response.json()
-    return formatDetailWeatherData(data)
+    console.log(data)
+    return data
   } catch (error) {
-    console.error('獲取天氣詳情時出錯:', error)
+    console.error('API 請求失敗:', error)
     throw error
   }
+}
+
+// 根據城市名稱獲取天氣資料
+export const getWeatherByCity = async (city: string): Promise<WeatherData> => {
+  const encodedCity = encodeURIComponent(city)
+  const url = `${BASE_URL}/weather?q=${encodedCity}&units=metric&appid=${API_KEY}&lang=zh_tw`
+  const data = await fetchWeatherData(url)
+  return formatWeatherData(data)
+}
+
+// 根據經緯度獲取天氣資料
+export const getWeatherByCoords = async (
+  lat: number,
+  lon: number
+): Promise<WeatherData> => {
+  const url = `${BASE_URL}/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}&lang=zh_tw`
+  const data = await fetchWeatherData(url)
+  return formatWeatherData(data)
 }
 
 // 格式化詳細天氣資料
@@ -122,6 +92,16 @@ const formatDetailWeatherData = (data: any): WeatherDetailData => {
     rain: data.rain || {},
     snow: data.snow || {},
   }
+}
+
+// 獲取指定城市的詳細天氣資料
+export const getWeatherDetail = async (
+  city: string
+): Promise<WeatherDetailData> => {
+  const encodedCity = encodeURIComponent(city)
+  const url = `${BASE_URL}/weather?q=${encodedCity}&units=metric&appid=${API_KEY}&lang=zh_tw`
+  const data = await fetchWeatherData(url)
+  return formatDetailWeatherData(data)
 }
 
 // 定義預報資料介面
@@ -166,26 +146,7 @@ export interface ForecastItem {
 export const getForecastByCity = async (
   city: string
 ): Promise<ForecastData> => {
-  try {
-    const encodedCity = encodeURIComponent(city)
-    const url = `${BASE_URL}/forecast?q=${encodedCity}&units=metric&appid=${API_KEY}&lang=zh_tw`
-    console.log('Forecast 請求 URL:', url)
-
-    const response = await fetch(url)
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`)
-    }
-
-    const data = await response.json()
-    console.log(
-      'Forecast 回應資料 (部分):',
-      JSON.stringify(data).substring(0, 200) + '...'
-    )
-
-    return data
-  } catch (error) {
-    console.error('獲取天氣預報時出錯:', error)
-    throw error
-  }
+  const encodedCity = encodeURIComponent(city)
+  const url = `${BASE_URL}/forecast?q=${encodedCity}&units=metric&appid=${API_KEY}&lang=zh_tw`
+  return await fetchWeatherData(url)
 }

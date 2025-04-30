@@ -39,6 +39,17 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [isLoading, setIsLoading] = useState<boolean>(true)
 
+  // 儲存設定到 AsyncStorage
+  const saveSettings = async (newSettings: AppSettings) => {
+    try {
+      const settingsJson = JSON.stringify(newSettings)
+      await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, settingsJson)
+      setSettings(newSettings)
+    } catch (error) {
+      console.error('儲存設定時發生錯誤:', error)
+    }
+  }
+
   // 載入設定
   useEffect(() => {
     const loadSettings = async () => {
@@ -46,7 +57,6 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
         const storedSettingsJson = await AsyncStorage.getItem(
           SETTINGS_STORAGE_KEY
         )
-
         if (storedSettingsJson) {
           const storedSettings = JSON.parse(storedSettingsJson) as AppSettings
           setSettings(storedSettings)
@@ -59,19 +69,9 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       }
     }
 
+    console.log('SettingsProvider元件掛載時，載入<用戶設定檔>資料')
     loadSettings()
   }, [])
-
-  // 儲存設定到 AsyncStorage
-  const saveSettings = async (newSettings: AppSettings) => {
-    try {
-      const settingsJson = JSON.stringify(newSettings)
-      await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, settingsJson)
-      setSettings(newSettings)
-    } catch (error) {
-      console.error('儲存設定時發生錯誤:', error)
-    }
-  }
 
   // 設定預設城市
   const setDefaultCity = async (city: City) => {

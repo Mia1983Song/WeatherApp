@@ -19,16 +19,40 @@ WeatherApp is a React Native app designed to provide weather information using t
 
 ## Technologies
 
-- **React Native**: 0.79.1
+### Core Framework
+
 - **React**: 19.0.0
+- **React Native**: 0.79.1
 - **TypeScript**: 5.0.4
-- **React Navigation**: 7.x
-- **State Management**: Context API
-- **AsyncStorage**: For storing user settings
-- **Location Services**: react-native-geolocation-service
-- **Permissions**: react-native-permissions
-- **UI Components**: react-native-vector-icons
-- **Responsive Design**: react-native-responsive-screen
+- **Node.js**: ≥ 18
+
+### Navigation
+
+- **React Navigation** 7.x
+  - @react-navigation/native: 7.1.6
+  - @react-navigation/bottom-tabs: 7.3.10
+  - @react-navigation/native-stack: 7.3.10
+
+### State Management
+
+- **Context API** (custom Providers and Hooks)
+
+### Data Persistence
+
+- **AsyncStorage** 2.1.2
+
+### UI Components & Styling
+
+- **react-native-vector-icons** 10.2.0
+- Custom responsive system (based on Dimensions API)
+
+### Location Services
+
+- **react-native-geolocation-service** 5.3.1
+
+### Permissions Management
+
+- **react-native-permissions** 5.3.0
 
 ## Installation
 
@@ -65,21 +89,36 @@ Follow these steps to set up the project:
 ```
 WeatherApp/
 ├── android/                      # Android-specific files
-│   └── app/
-│       └── build.gradle          # Build configuration
 ├── src/
-│   ├── api/                      # API handling
-│   │   └── weatherApi.ts         # Weather API functions
+│   ├── api/                      # API related functionality
+│   │   └── weatherApi.ts         # Weather API interfaces and functions
 │   ├── components/               # Reusable components
-│   ├── contexts/                 # Context API for global state
-│   ├── hooks/                    # Custom React hooks
-│   ├── navigation/               # App navigation setup
-│   ├── screens/                  # Screens for the app
-│   ├── types/                    # TypeScript types
+│   │   ├── WeatherCard.tsx       # Weather information card
+│   │   ├── SearchBar.tsx         # Search input component
+│   │   └── common/               # Common UI components
+│   │       ├── StatusDisplay.tsx # Unified status display component
+│   │       ├── LoadingIndicator.tsx # Loading indicator component
+│   │       └── ErrorDisplay.tsx  # Error display component
+│   ├── contexts/                 # Context API related
+│   │   └── SettingsContext.tsx   # Settings management context
+│   ├── hooks/                    # Custom React Hooks
+│   │   └── useLocation.ts        # Location services hook
+│   ├── navigation/               # Navigation related
+│   │   ├── AppNavigator.tsx      # Main app navigation configuration
+│   │   └── HomeStack.tsx         # Home stack navigation
+│   ├── screens/                  # Main screens
+│   │   ├── HomeScreen.tsx        # Home page
+│   │   ├── SearchScreen.tsx      # Search page
+│   │   ├── SettingsScreen.tsx    # Settings page
+│   │   ├── WeatherDetailScreen.tsx # Weather details page
+│   │   └── ForecastScreen.tsx    # Forecast page
+│   ├── types/                    # Type definitions
+│   │   └── settings.ts           # Settings related types
 │   └── utils/                    # Utility functions
-├── App.tsx                       # Main entry point for the app
-├── package.json                  # Project dependencies and scripts
-└── tsconfig.json                 # TypeScript configuration
+│       ├── responsive.ts         # Responsive design utilities
+│       └── temperatureUtils.ts   # Temperature conversion utilities
+├── App.tsx                       # App entry point
+└── index.js                      # React Native entry point
 ```
 
 ## Features

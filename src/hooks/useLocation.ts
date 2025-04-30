@@ -15,15 +15,17 @@ export interface LocationCoords {
 // 定義 Hook 返回值的類型
 interface UseLocationProps {
   location: LocationCoords | null
-  loading: boolean
-  error: string | null
+  isLoadingLocation: boolean
+  locationErrorMessage: string | null
   requestLocation: () => Promise<void> // 允許手動觸發定位請求
 }
 
 const useLocation = (autoRequest = false): UseLocationProps => {
   const [location, setLocation] = useState<LocationCoords | null>(null)
-  const [loading, setLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
+  const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(false)
+  const [locationErrorMessage, setLocationErrorMessage] = useState<
+    string | null
+  >(null)
 
   // 獲取對應平台的位置權限
   const getLocationPermission = () => {
@@ -35,85 +37,80 @@ const useLocation = (autoRequest = false): UseLocationProps => {
   }
 
   // 請求位置權限
-  const requestLocationPermission = async (): Promise<boolean> => {
+  const getLocation = async () => {
+    setIsLoadingLocation(true)
+    setLocationErrorMessage(null)
+
     try {
       const permission = getLocationPermission()
       const permissionStatus = await check(permission)
 
-      switch (permissionStatus) {
-        case RESULTS.UNAVAILABLE:
-          setError('此裝置不支援位置服務')
-          return false
-
-        case RESULTS.DENIED:
-          // 用戶尚未決定，請求權限
-          const result = await request(permission)
-          return result === RESULTS.GRANTED
-
-        case RESULTS.BLOCKED:
-          // 用戶已永久拒絕權限
-          setError('位置權限已被永久拒絕，請在系統設定中啟用')
-          return false
-
-        case RESULTS.GRANTED:
-          return true
-
-        default:
-          return false
+      // 處理不同的權限狀態
+      if (permissionStatus === RESULTS.UNAVAILABLE) {
+        throw new Error('此裝置不支援位置服務')
+      } else if (permissionStatus === RESULTS.DENIED) {
+        const result = await request(permission)
+        if (result !== RESULTS.GRANTED) {
+          throw new Error('需要位置權限才能獲取當前位置')
+        }
+      } else if (permissionStatus === RESULTS.BLOCKED) {
+        throw new Error('位置權限已被永久拒絕，請在系統設定中啟用')
+      } else if (permissionStatus !== RESULTS.GRANTED) {
+        throw new Error('無法獲取位置權限')
       }
-    } catch (err) {
-      console.warn('請求權限時發生錯誤:', err)
-      setError('請求權限時發生錯誤')
-      return false
+
+      // 權限已獲取，請求位置
+      return new Promise<void>((resolve, reject) => {
+        Geolocation.getCurrentPosition(
+          (position: GeoPosition) => {
+            console.log('Geolocation Success:', position)
+            const { latitude, longitude } = position.coords
+            setLocation({ latitude, longitude })
+            resolve()
+          },
+          (geoError: GeoError) => {
+            console.error('Geolocation Error:', geoError.code, geoError.message)
+            reject(
+              new Error(
+                `無法獲取位置：${geoError.message} (Code ${geoError.code})`
+              )
+            )
+          },
+          {
+            enableHighAccuracy: true, // 盡可能使用高精度 (GPS)
+            timeout: 15000, // 15 秒超時
+            maximumAge: 10000, // 接受 10 秒內的快取位置
+          }
+        )
+      })
+    } catch (error) {
+      console.warn('位置服務錯誤:', error)
+
+      let errorMsg = '獲取位置時發生錯誤'
+      if (error instanceof Error) {
+        errorMsg = error.message || errorMsg
+      }
+
+      setLocationErrorMessage(errorMsg)
+    } finally {
+      setIsLoadingLocation(false)
     }
   }
 
-  // 獲取位置
-  const getLocation = async () => {
-    setLoading(true)
-    setError(null)
-    setLocation(null)
-
-    const hasPermission = await requestLocationPermission()
-
-    if (!hasPermission) {
-      setLoading(false)
-      return
-    }
-
-    Geolocation.getCurrentPosition(
-      (position: GeoPosition) => {
-        console.log('Geolocation Success:', position)
-        const { latitude, longitude } = position.coords
-        setLocation({ latitude, longitude })
-        setLoading(false)
-      },
-      (geoError: GeoError) => {
-        console.error('Geolocation Error:', geoError.code, geoError.message)
-        setError(`無法獲取位置：${geoError.message} (Code ${geoError.code})`)
-        setLoading(false)
-      },
-      {
-        enableHighAccuracy: true, // 盡可能使用高精度 (GPS)
-        timeout: 15000, // 15 秒超時
-        maximumAge: 10000, // 接受 10 秒內的快取位置
-      }
-    )
-  }
-
-  // 手動請求位置的函數
-  const requestLocation = async () => {
-    await getLocation()
-  }
-
-  // 如果設定為自動請求，則在 Hook 掛載時請求位置
+  // 自動請求邏輯保持不變
   useEffect(() => {
+    console.log('useLocation掛載時，判斷是否自動請求<用戶定位>')
     if (autoRequest) {
-      requestLocation()
+      getLocation()
     }
   }, [])
 
-  return { location, loading, error, requestLocation }
+  return {
+    location,
+    isLoadingLocation,
+    locationErrorMessage,
+    requestLocation: getLocation,
+  }
 }
 
 export default useLocation
