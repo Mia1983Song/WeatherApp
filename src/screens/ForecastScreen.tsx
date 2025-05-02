@@ -23,8 +23,11 @@ import {
   ForecastItem,
 } from '../api/weatherApi'
 import { useSettings } from '../contexts/SettingsContext'
+import { useTheme } from '../contexts/ThemeContext'
 import { TemperatureUnit } from '../types/settings'
 import StatusDisplay from '../components/common/StatusDisplay'
+import FadeIn from '../components/animations/FadeIn'
+import SlideIn from '../components/animations/SlideIn'
 
 type ForecastRouteProp = RouteProp<HomeStackParamList, 'Forecast'>
 
@@ -58,6 +61,7 @@ export default function ForecastScreen() {
 
   // 獲取設定
   const { settings } = useSettings()
+  const { theme } = useTheme() // 使用主題
 
   // 螢幕尺寸資訊
   const dimensions = useDimensions()
@@ -208,7 +212,10 @@ export default function ForecastScreen() {
     <ScrollView
       contentContainerStyle={[
         styles.scrollContainer,
-        { paddingHorizontal: scale(isSmallDevice ? 12 : 16) },
+        {
+          paddingHorizontal: scale(isSmallDevice ? 12 : 16),
+          backgroundColor: theme.colors.background, // 使用主題背景色
+        },
       ]}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -222,173 +229,360 @@ export default function ForecastScreen() {
       />
 
       {!loading && !error && dailyForecasts.length > 0 && (
-        <View style={styles.container}>
-          <Text
-            style={[
-              styles.title,
-              { fontSize: responsiveFontSize(isSmallDevice ? 22 : 24) },
-            ]}
-          >
-            {cityName} 5天預報
-          </Text>
-
-          {/* 日期選擇器 */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.daySelector}
-          >
-            {dailyForecasts.map((day, index) => (
-              <TouchableOpacity
-                key={index}
+        <FadeIn duration={600}>
+          <View style={styles.container}>
+            {/* 標題 - 使用 SlideIn 從上滑入 */}
+            <SlideIn direction='down' distance={30} duration={800} delay={100}>
+              <Text
                 style={[
-                  styles.daySelectorItem,
-                  selectedDay === index && styles.selectedDayItem,
+                  styles.title,
+                  {
+                    fontSize: responsiveFontSize(isSmallDevice ? 22 : 24),
+                    color: theme.colors.text,
+                  },
                 ]}
-                onPress={() => setSelectedDay(index)}
               >
-                <Text
+                {cityName} 5天預報
+              </Text>
+            </SlideIn>
+
+            {/* 日期選擇器 - 使用 SlideIn 從左滑入 */}
+            <SlideIn direction='left' distance={50} duration={800} delay={300}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.daySelector}
+              >
+                {dailyForecasts.map((day, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.daySelectorItem,
+                      {
+                        backgroundColor:
+                          selectedDay === index
+                            ? theme.colors.primary
+                            : theme.colors.card,
+                        borderColor:
+                          selectedDay === index
+                            ? theme.colors.primary
+                            : theme.colors.border,
+                      },
+                    ]}
+                    onPress={() => setSelectedDay(index)}
+                  >
+                    <Text
+                      style={[
+                        styles.daySelectorText,
+                        {
+                          color:
+                            selectedDay === index
+                              ? 'white'
+                              : theme.colors.text + '99',
+                        },
+                      ]}
+                    >
+                      {day.displayDate}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </SlideIn>
+
+            {/* 選定日期的詳細預報 - 使用 SlideIn 從右滑入 */}
+            {dailyForecasts[selectedDay] && (
+              <SlideIn
+                direction='right'
+                distance={100}
+                duration={800}
+                delay={500}
+              >
+                <View
                   style={[
-                    styles.daySelectorText,
-                    selectedDay === index && styles.selectedDayText,
+                    styles.forecastDetail,
+                    {
+                      backgroundColor: theme.colors.card,
+                    },
                   ]}
                 >
-                  {day.displayDate}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* 選定日期的詳細預報 */}
-          {dailyForecasts[selectedDay] && (
-            <View style={styles.forecastDetail}>
-              <View style={styles.header}>
-                <View style={styles.weatherIconContainer}>
-                  <Icon
-                    name={getWeatherIconName(dailyForecasts[selectedDay].icon)}
-                    size={scale(isSmallDevice ? 50 : 60)}
-                    color='#007AFF' // 使用與 HomeScreen 按鈕相同的藍色
-                  />
-                  <Text style={styles.weatherDescription}>
-                    {dailyForecasts[selectedDay].description}
-                  </Text>
-                </View>
-
-                <View style={styles.temperatureContainer}>
-                  <Text style={styles.maxTemp}>
-                    {dailyForecasts[selectedDay].maxTemp}
-                    {dailyForecasts[selectedDay].temperatureUnit}
-                  </Text>
-                  <Text style={styles.minTemp}>
-                    {dailyForecasts[selectedDay].minTemp}
-                    {dailyForecasts[selectedDay].temperatureUnit}
-                  </Text>
-                </View>
-              </View>
-
-              {/* 主要天氣詳情 */}
-              <View
-                style={[
-                  styles.detailsGrid,
-                  isLandscape &&
-                    isLargeDevice && {
-                      justifyContent: 'flex-start',
-                    },
-                ]}
-              >
-                <View style={styles.detailItem}>
-                  <Icon name='water-percent' size={scale(24)} color='#007AFF' />
-                  <Text style={styles.detailLabel}>濕度</Text>
-                  <Text style={styles.detailValue}>
-                    {dailyForecasts[selectedDay].humidity}%
-                  </Text>
-                </View>
-
-                <View style={styles.detailItem}>
-                  <Icon name='weather-windy' size={scale(24)} color='#007AFF' />
-                  <Text style={styles.detailLabel}>風速</Text>
-                  <Text style={styles.detailValue}>
-                    {dailyForecasts[selectedDay].windSpeed} m/s
-                  </Text>
-                </View>
-
-                <View style={styles.detailItem}>
-                  <Icon
-                    name='weather-pouring'
-                    size={scale(24)}
-                    color='#007AFF'
-                  />
-                  <Text style={styles.detailLabel}>降雨機率</Text>
-                  <Text style={styles.detailValue}>
-                    {dailyForecasts[selectedDay].pop}%
-                  </Text>
-                </View>
-              </View>
-
-              {/* 小時預報 */}
-              <View style={styles.hourlyContainer}>
-                <Text style={styles.sectionTitle}>小時預報</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.hourlyScroll}
-                >
-                  {dailyForecasts[selectedDay].items.map((hourData, index) => (
-                    <View key={index} style={styles.hourlyItem}>
-                      <Text style={styles.hourlyTime}>
-                        {formatTime(hourData.dt_txt)}
-                      </Text>
+                  <View
+                    style={[
+                      styles.header,
+                      { borderBottomColor: theme.colors.border },
+                    ]}
+                  >
+                    <View style={styles.weatherIconContainer}>
                       <Icon
-                        name={getWeatherIconName(hourData.weather[0].icon)}
-                        size={scale(isSmallDevice ? 18 : 20)}
-                        color='#007AFF'
+                        name={getWeatherIconName(
+                          dailyForecasts[selectedDay].icon
+                        )}
+                        size={scale(isSmallDevice ? 50 : 60)}
+                        color={theme.colors.primary}
                       />
-                      <Text style={styles.hourlyTemp}>
-                        {Math.round(hourData.main.temp)}
+                      <Text
+                        style={[
+                          styles.weatherDescription,
+                          { color: theme.colors.text + '99' },
+                        ]}
+                      >
+                        {dailyForecasts[selectedDay].description}
+                      </Text>
+                    </View>
+
+                    <View style={styles.temperatureContainer}>
+                      <Text
+                        style={[styles.maxTemp, { color: theme.colors.text }]}
+                      >
+                        {dailyForecasts[selectedDay].maxTemp}
                         {dailyForecasts[selectedDay].temperatureUnit}
                       </Text>
-                      <View style={styles.hourlyPop}>
+                      <Text
+                        style={[
+                          styles.minTemp,
+                          { color: theme.colors.text + '99' },
+                        ]}
+                      >
+                        {dailyForecasts[selectedDay].minTemp}
+                        {dailyForecasts[selectedDay].temperatureUnit}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* 主要天氣詳情 - 使用 FadeIn 淡入 */}
+                  <FadeIn delay={700} duration={800}>
+                    <View
+                      style={[
+                        styles.detailsGrid,
+                        isLandscape &&
+                          isLargeDevice && {
+                            justifyContent: 'flex-start',
+                          },
+                      ]}
+                    >
+                      <View style={styles.detailItem}>
                         <Icon
-                          name='water'
-                          size={scale(isSmallDevice ? 10 : 12)}
-                          color={hourData.pop > 0 ? '#007AFF' : '#d0d0d0'}
+                          name='water-percent'
+                          size={scale(24)}
+                          color={theme.colors.primary}
                         />
                         <Text
                           style={[
-                            styles.hourlyPopText,
-                            { color: hourData.pop > 0 ? '#007AFF' : '#d0d0d0' },
+                            styles.detailLabel,
+                            { color: theme.colors.text + '99' },
                           ]}
                         >
-                          {Math.round(hourData.pop * 100)}%
+                          濕度
+                        </Text>
+                        <Text
+                          style={[
+                            styles.detailValue,
+                            { color: theme.colors.text },
+                          ]}
+                        >
+                          {dailyForecasts[selectedDay].humidity}%
+                        </Text>
+                      </View>
+
+                      <View style={styles.detailItem}>
+                        <Icon
+                          name='weather-windy'
+                          size={scale(24)}
+                          color={theme.colors.primary}
+                        />
+                        <Text
+                          style={[
+                            styles.detailLabel,
+                            { color: theme.colors.text + '99' },
+                          ]}
+                        >
+                          風速
+                        </Text>
+                        <Text
+                          style={[
+                            styles.detailValue,
+                            { color: theme.colors.text },
+                          ]}
+                        >
+                          {dailyForecasts[selectedDay].windSpeed} m/s
+                        </Text>
+                      </View>
+
+                      <View style={styles.detailItem}>
+                        <Icon
+                          name='weather-pouring'
+                          size={scale(24)}
+                          color={theme.colors.primary}
+                        />
+                        <Text
+                          style={[
+                            styles.detailLabel,
+                            { color: theme.colors.text + '99' },
+                          ]}
+                        >
+                          降雨機率
+                        </Text>
+                        <Text
+                          style={[
+                            styles.detailValue,
+                            { color: theme.colors.text },
+                          ]}
+                        >
+                          {dailyForecasts[selectedDay].pop}%
                         </Text>
                       </View>
                     </View>
-                  ))}
-                </ScrollView>
-              </View>
+                  </FadeIn>
 
-              {/* 天氣資料說明 */}
-              <View style={styles.infoContainer}>
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>資料來源</Text>
-                  <Text style={styles.infoValue}>OpenWeatherMap API</Text>
+                  {/* 小時預報 - 使用 SlideIn 從左滑入 */}
+                  <SlideIn
+                    direction='left'
+                    distance={70}
+                    duration={800}
+                    delay={900}
+                  >
+                    <View
+                      style={[
+                        styles.hourlyContainer,
+                        { borderTopColor: theme.colors.border },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.sectionTitle,
+                          {
+                            color: theme.colors.text,
+                            borderLeftColor: theme.colors.primary,
+                          },
+                        ]}
+                      >
+                        小時預報
+                      </Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.hourlyScroll}
+                      >
+                        {dailyForecasts[selectedDay].items.map(
+                          (hourData, index) => (
+                            <FadeIn
+                              key={index}
+                              delay={900 + index * 50}
+                              duration={500}
+                            >
+                              <View style={styles.hourlyItem}>
+                                <Text
+                                  style={[
+                                    styles.hourlyTime,
+                                    { color: theme.colors.text + '99' },
+                                  ]}
+                                >
+                                  {formatTime(hourData.dt_txt)}
+                                </Text>
+                                <Icon
+                                  name={getWeatherIconName(
+                                    hourData.weather[0].icon
+                                  )}
+                                  size={scale(isSmallDevice ? 18 : 20)}
+                                  color={theme.colors.primary}
+                                />
+                                <Text
+                                  style={[
+                                    styles.hourlyTemp,
+                                    { color: theme.colors.text },
+                                  ]}
+                                >
+                                  {Math.round(hourData.main.temp)}
+                                  {dailyForecasts[selectedDay].temperatureUnit}
+                                </Text>
+                                <View style={styles.hourlyPop}>
+                                  <Icon
+                                    name='water'
+                                    size={scale(isSmallDevice ? 10 : 12)}
+                                    color={
+                                      hourData.pop > 0
+                                        ? theme.colors.primary
+                                        : theme.colors.border
+                                    }
+                                  />
+                                  <Text
+                                    style={[
+                                      styles.hourlyPopText,
+                                      {
+                                        color:
+                                          hourData.pop > 0
+                                            ? theme.colors.primary
+                                            : theme.colors.border,
+                                      },
+                                    ]}
+                                  >
+                                    {Math.round(hourData.pop * 100)}%
+                                  </Text>
+                                </View>
+                              </View>
+                            </FadeIn>
+                          )
+                        )}
+                      </ScrollView>
+                    </View>
+                  </SlideIn>
+
+                  {/* 天氣資料說明 - 使用 FadeIn 淡入 */}
+                  <FadeIn delay={1100} duration={800}>
+                    <View
+                      style={[
+                        styles.infoContainer,
+                        { borderTopColor: theme.colors.border },
+                      ]}
+                    >
+                      <View style={styles.infoItem}>
+                        <Text
+                          style={[
+                            styles.infoLabel,
+                            { color: theme.colors.text + '99' },
+                          ]}
+                        >
+                          資料來源
+                        </Text>
+                        <Text
+                          style={[
+                            styles.infoValue,
+                            { color: theme.colors.text },
+                          ]}
+                        >
+                          OpenWeatherMap API
+                        </Text>
+                      </View>
+                      <View style={styles.infoItem}>
+                        <Text
+                          style={[
+                            styles.infoLabel,
+                            { color: theme.colors.text + '99' },
+                          ]}
+                        >
+                          更新時間
+                        </Text>
+                        <Text
+                          style={[
+                            styles.infoValue,
+                            { color: theme.colors.text },
+                          ]}
+                        >
+                          {new Date().toLocaleString('zh-TW', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                          })}
+                        </Text>
+                      </View>
+                    </View>
+                  </FadeIn>
                 </View>
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>更新時間</Text>
-                  <Text style={styles.infoValue}>
-                    {new Date().toLocaleString('zh-TW', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit',
-                    })}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          )}
-        </View>
+              </SlideIn>
+            )}
+          </View>
+        </FadeIn>
       )}
     </ScrollView>
   )
@@ -397,7 +591,6 @@ export default function ForecastScreen() {
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
-    backgroundColor: '#f5f5f5',
   },
   container: {
     flex: 1,
@@ -407,7 +600,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: scale(20),
-    color: '#212121',
   },
   daySelector: {
     flexDirection: 'row',
@@ -415,28 +607,16 @@ const styles = StyleSheet.create({
     marginBottom: scale(20),
   },
   daySelectorItem: {
-    backgroundColor: 'white',
     borderRadius: scale(20),
     paddingHorizontal: scale(16),
     paddingVertical: scale(8),
     marginRight: scale(10),
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  selectedDayItem: {
-    backgroundColor: '#007AFF', // 使用與 HomeScreen 按鈕相同的藍色
-    borderColor: '#007AFF',
   },
   daySelectorText: {
-    color: '#757575',
     fontSize: responsiveFontSize(14),
   },
-  selectedDayText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
   forecastDetail: {
-    backgroundColor: 'white',
     borderRadius: scale(12),
     padding: scale(16),
     shadowColor: '#000',
@@ -452,13 +632,11 @@ const styles = StyleSheet.create({
     marginBottom: scale(20),
     paddingBottom: scale(16),
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   weatherIconContainer: {
     alignItems: 'center',
   },
   weatherDescription: {
-    color: '#757575',
     fontSize: responsiveFontSize(14),
     marginTop: scale(8),
     textAlign: 'center',
@@ -469,11 +647,9 @@ const styles = StyleSheet.create({
   maxTemp: {
     fontSize: responsiveFontSize(32),
     fontWeight: 'bold',
-    color: '#212121',
   },
   minTemp: {
     fontSize: responsiveFontSize(18),
-    color: '#757575',
     marginTop: scale(4),
   },
   detailsGrid: {
@@ -486,30 +662,25 @@ const styles = StyleSheet.create({
     width: '30%',
   },
   detailLabel: {
-    color: '#757575',
     fontSize: responsiveFontSize(12),
     marginTop: scale(4),
   },
   detailValue: {
     fontWeight: 'bold',
     fontSize: responsiveFontSize(16),
-    color: '#212121',
     marginTop: scale(2),
   },
   sectionTitle: {
     fontSize: responsiveFontSize(16),
     fontWeight: '600',
-    color: '#212121',
     marginBottom: scale(10),
     borderLeftWidth: 3,
-    borderLeftColor: '#007AFF',
     paddingLeft: scale(8),
   },
   hourlyContainer: {
     marginTop: scale(16),
     paddingTop: scale(16),
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
   },
   hourlyScroll: {
     paddingVertical: scale(10),
@@ -520,14 +691,12 @@ const styles = StyleSheet.create({
     width: scale(50),
   },
   hourlyTime: {
-    color: '#757575',
     fontSize: responsiveFontSize(12),
     marginBottom: scale(6),
   },
   hourlyTemp: {
     fontWeight: 'bold',
     fontSize: responsiveFontSize(14),
-    color: '#212121',
     marginTop: scale(6),
   },
   hourlyPop: {
@@ -543,7 +712,6 @@ const styles = StyleSheet.create({
     marginTop: scale(20),
     paddingTop: scale(16),
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
   },
   infoItem: {
     flexDirection: 'row',
@@ -551,11 +719,9 @@ const styles = StyleSheet.create({
     marginBottom: scale(4),
   },
   infoLabel: {
-    color: '#757575',
     fontSize: responsiveFontSize(12),
   },
   infoValue: {
-    color: '#212121',
     fontSize: responsiveFontSize(12),
   },
 })
