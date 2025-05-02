@@ -123,20 +123,39 @@ WeatherApp/
 
 ## Features
 
-- View weather data for the current location or a searched city.
-- Supports temperature units in Celsius and Fahrenheit.
-- Save user settings (e.g., default city, units, etc.) with AsyncStorage.
-- Supports navigation to different screens for detailed weather information.
-- Uses `react-native-geolocation-service` to get the user's current location.
-- Ability to change the default city and unit settings in the app.
+- **Current Location Weather**: View real-time weather information based on your current location
+- **City Search**: Search and display weather data for cities around the world
+- **Detailed Weather Information**: View temperature, humidity, wind speed, UV index, and more
+- **5-Day Forecast**: Display weather forecast for the next five days
+- **Hourly Forecast**: View hourly forecast data for each day
+- **Settings Options**:
+  - Temperature unit toggle (Celsius/Fahrenheit)
+  - Default city configuration
+  - Option to use current location on startup
+- **Responsive Design**: Adapts to different device sizes and screen orientations
+- **Pull-to-Refresh**: Support for refreshing weather data with pull-down gesture
 
 ## Screenshots
 
-- Home Screen
-- Search Screen
-- Settings Screen
+- **Home Screen**
 
-(Screenshot here)
+  ![Home Screen](screenshots/home-screen.png)
+
+- **Search Screen**
+
+  ![Search Screen](screenshots/search-screen.png)
+
+- **Settings Screen**
+
+  ![Settings Screen](screenshots/settings-screen.png)
+
+- **Weather Details Screen**
+
+  ![Detail Screen](screenshots/detail-screen.png)
+
+- **Forecast Screen**
+
+  ![Forecast Screen](screenshots/forecast-screen.png)
 
 ## Contributing
 
@@ -145,3 +164,7 @@ Feel free to fork the repository and submit issues and pull requests for new fea
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+_Note: Screenshots section currently contains placeholders. Replace with actual app screenshots after implementation._

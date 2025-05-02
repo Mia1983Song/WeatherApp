@@ -1,3 +1,5 @@
+import { OPENWEATHERMAP_API_KEY } from '@env'
+
 // 定義天氣資料的介面
 export interface WeatherData {
   city: string
@@ -23,7 +25,7 @@ export interface WeatherDetailData extends WeatherData {
   snow?: { '1h'?: number; '3h'?: number } // 降雪量 (mm)
 }
 
-const API_KEY = 'b2efd7a5092f6c6d0ca57d9f0c3813a1'
+const API_KEY = OPENWEATHERMAP_API_KEY
 const BASE_URL = 'https://api.openweathermap.org/data/2.5'
 
 // 格式化 API 返回的數據

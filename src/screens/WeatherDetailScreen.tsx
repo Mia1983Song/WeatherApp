@@ -1,4 +1,10 @@
-import { StyleSheet, Text, View, ScrollView } from 'react-native'
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  RefreshControl,
+} from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { HomeStackParamList } from '../navigation/HomeStack'
@@ -25,6 +31,7 @@ export default function WeatherDetailScreen() {
   const [detailData, setDetailData] = useState<WeatherDetailData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   // 獲取設定
   const { settings } = useSettings()
@@ -34,28 +41,32 @@ export default function WeatherDetailScreen() {
   const isLandscape = dimensions.window.width > dimensions.window.height
 
   // 獲取詳細資料
-  useEffect(() => {
-    const fetchDetailData = async () => {
-      setLoading(true)
-      try {
-        const data = await getWeatherDetail(cityName)
-        // 使用 applyTemperatureUnit 處理溫度單位
-        const processedData = applyTemperatureUnit(
-          data,
-          settings.temperatureUnit
-        )
-        setDetailData(processedData)
-        setError(null)
-      } catch (err) {
-        console.error('獲取詳細資料失敗:', err)
-        setError('無法獲取天氣詳情，請稍後再試')
-      } finally {
-        setLoading(false)
-      }
+  const fetchDetailData = async () => {
+    setLoading(true)
+    try {
+      const data = await getWeatherDetail(cityName)
+      // 使用 applyTemperatureUnit 處理溫度單位
+      const processedData = applyTemperatureUnit(data, settings.temperatureUnit)
+      setDetailData(processedData)
+      setError(null)
+    } catch (err) {
+      console.error('獲取詳細資料失敗:', err)
+      setError('無法獲取天氣詳情，請稍後再試')
+    } finally {
+      setLoading(false)
+      setRefreshing(false) // 重設重新整理狀態
     }
+  }
 
+  useEffect(() => {
     fetchDetailData()
-  }, [cityId, settings.temperatureUnit]) // 也監聽溫度單位變化
+  }, [cityId, settings.temperatureUnit])
+
+  // 處理下拉重新整理
+  const onRefresh = () => {
+    setRefreshing(true)
+    fetchDetailData()
+  }
 
   // 格式化時間
   const formatTime = (timestamp: number) => {
@@ -148,6 +159,9 @@ export default function WeatherDetailScreen() {
         styles.scrollContainer,
         { paddingHorizontal: scale(isSmallDevice ? 12 : 16) },
       ]}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
     >
       {/* 使用 StatusDisplay 顯示載入和錯誤狀態 */}
       <StatusDisplay
