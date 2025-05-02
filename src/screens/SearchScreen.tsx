@@ -6,11 +6,12 @@ import {
   Platform,
   KeyboardAvoidingView,
   TouchableOpacity,
+  Alert,
 } from 'react-native'
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { getWeatherByCity, WeatherData } from '../api/weatherApi'
 import WeatherCard from '../components/WeatherCard'
-import SearchBar from '../components/SearchBar'
+import SearchBar, { SearchBarHandle } from '../components/SearchBar'
 import StatusDisplay from '../components/common/StatusDisplay'
 import { useSettings } from '../contexts/SettingsContext'
 import { applyTemperatureUnit } from '../utils/temperatureUtils'
@@ -20,12 +21,16 @@ export default function SearchScreen() {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
   const { settings } = useSettings()
+
+  // 創建對 SearchBar 的 ref
+  const searchBarRef = useRef<SearchBarHandle>(null)
 
   const handleSearch = async () => {
     if (!city.trim()) {
       setError('請輸入城市名稱')
+      // 使用 ref 聚焦搜尋框
+      searchBarRef.current?.focus()
       return
     }
 
@@ -42,7 +47,6 @@ export default function SearchScreen() {
           data,
           settings.temperatureUnit
         )
-
         setWeatherData(processedData)
         Keyboard.dismiss() // 成功搜尋後收起鍵盤
         console.log(`成功獲取 ${city} 的天氣資料`)
@@ -75,7 +79,21 @@ export default function SearchScreen() {
       handleSearch()
     } else {
       setCity('')
+      // 使用 ref 聚焦搜尋框，提示用戶輸入
+      searchBarRef.current?.focus()
     }
+  }
+
+  // 清空搜尋並開始新的搜尋
+  const handleNewSearch = () => {
+    // 使用 ref 清空搜尋框
+    searchBarRef.current?.clear()
+    setWeatherData(null)
+
+    // 聚焦到搜尋框，方便用戶立即輸入
+    setTimeout(() => {
+      searchBarRef.current?.focus()
+    }, 100)
   }
 
   return (
@@ -86,12 +104,14 @@ export default function SearchScreen() {
     >
       <Text style={styles.title}>搜尋城市天氣</Text>
 
-      {/* 使用 SearchBar 元件，完全符合其介面定義 */}
+      {/* 使用 SearchBar 元件，並傳入 ref */}
       <SearchBar
+        ref={searchBarRef}
         value={city}
         onChangeText={setCity}
         onSubmit={handleSearch}
         loading={loading}
+        autoFocus={!weatherData} // 如果沒有顯示天氣資料，則自動聚焦
       />
 
       {/* 使用狀態顯示元件 */}
@@ -110,13 +130,9 @@ export default function SearchScreen() {
             weatherData={weatherData}
             temperatureUnit={weatherData.temperatureUnit}
           />
-
           <TouchableOpacity
             style={styles.newSearchButton}
-            onPress={() => {
-              setCity('')
-              setWeatherData(null)
-            }}
+            onPress={handleNewSearch}
             activeOpacity={0.7}
           >
             <Text style={styles.newSearchButtonText}>搜尋其他城市</Text>
