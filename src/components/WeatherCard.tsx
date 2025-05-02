@@ -10,6 +10,7 @@ import {
 } from '../utils/responsive'
 import FadeIn from './animations/FadeIn'
 import SlideIn from './animations/SlideIn'
+import ScaleBounce from '../components/animations/ScaleBounce'
 import { useTheme } from '../contexts/ThemeContext'
 
 interface WeatherCardProps {
@@ -34,170 +35,185 @@ export default function WeatherCard({
   return (
     <FadeIn duration={700} delay={delay}>
       <SlideIn direction='right' duration={800} delay={delay} distance={80}>
-        <View
-          style={[
-            styles.card,
-            {
-              backgroundColor: theme.colors.card,
-              padding: scale(isSmallDevice ? 15 : 20),
-              marginHorizontal: scale(isSmallDevice ? 10 : 20),
-            },
-          ]}
+        <ScaleBounce
+          initialScale={0.9}
+          finalScale={1}
+          delay={delay + 200}
+          tension={30}
+          friction={8}
         >
-          <View style={styles.headerContainer}>
-            <Text
-              style={[
-                styles.location,
-                {
-                  fontSize: responsiveFontSize(isSmallDevice ? 16 : 18),
-                  color: theme.colors.text,
-                },
-              ]}
-            >
-              {weatherData.city}, {weatherData.country}
-            </Text>
-            <Text
-              style={[
-                styles.date,
-                {
-                  fontSize: responsiveFontSize(isSmallDevice ? 12 : 14),
-                  color: theme.colors.text + '99', // 半透明文字
-                },
-              ]}
-            >
-              {weatherData.date}
-            </Text>
-          </View>
-
-          {/* 根據屏幕方向調整佈局 */}
           <View
             style={[
-              styles.weatherContainer,
-              isLandscape && { alignItems: 'flex-start' },
-            ]}
-          >
-            <Text
-              style={[
-                styles.temperature,
-                {
-                  fontSize: responsiveFontSize(isSmallDevice ? 36 : 42),
-                  color: theme.colors.text,
-                },
-              ]}
-            >
-              {weatherData.temperature}
-              {temperatureUnit}
-            </Text>
-            <Image
-              style={[
-                styles.weatherIcon,
-                {
-                  width: scale(isSmallDevice ? 80 : 100),
-                  height: scale(isSmallDevice ? 80 : 100),
-                },
-              ]}
-              source={{
-                uri: `https://openweathermap.org/img/wn/${weatherData.icon}@4x.png`,
-              }}
-            />
-          </View>
-
-          <Text
-            style={[
-              styles.description,
+              styles.card,
               {
-                fontSize: responsiveFontSize(isSmallDevice ? 14 : 16),
-                color: theme.colors.text,
+                backgroundColor: theme.colors.card,
+                padding: scale(isSmallDevice ? 15 : 20),
+                marginHorizontal: scale(isSmallDevice ? 10 : 20),
               },
             ]}
           >
-            {weatherData.description}
-          </Text>
+            <View style={styles.headerContainer}>
+              <Text
+                style={[
+                  styles.location,
+                  {
+                    fontSize: responsiveFontSize(isSmallDevice ? 16 : 18),
+                    color: theme.colors.text,
+                  },
+                ]}
+              >
+                {weatherData.city}, {weatherData.country}
+              </Text>
+              <Text
+                style={[
+                  styles.date,
+                  {
+                    fontSize: responsiveFontSize(isSmallDevice ? 12 : 14),
+                    color: theme.colors.text + '99', // 半透明文字
+                  },
+                ]}
+              >
+                {weatherData.date}
+              </Text>
+            </View>
 
-          <View
-            style={[
-              styles.detailsContainer,
-              {
-                flexDirection: isSmallDevice && !isLandscape ? 'column' : 'row',
-                alignItems:
-                  isSmallDevice && !isLandscape ? 'stretch' : 'center',
-                borderTopColor: theme.colors.border,
-              },
-            ]}
-          >
+            {/* 根據屏幕方向調整佈局 */}
             <View
               style={[
-                styles.detailItem,
-                isSmallDevice &&
-                  !isLandscape && {
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    marginBottom: 8,
-                  },
+                styles.weatherContainer,
+                isLandscape && { alignItems: 'flex-start' },
               ]}
             >
               <Text
                 style={[
-                  styles.detailLabel,
-                  { color: theme.colors.text + '99' },
+                  styles.temperature,
+                  {
+                    fontSize: responsiveFontSize(isSmallDevice ? 36 : 42),
+                    color: theme.colors.text,
+                  },
                 ]}
               >
-                體感溫度
-              </Text>
-              <Text style={[styles.detailValue, { color: theme.colors.text }]}>
-                {weatherData.feelsLike}
+                {weatherData.temperature}
                 {temperatureUnit}
               </Text>
+              <Image
+                style={[
+                  styles.weatherIcon,
+                  {
+                    width: scale(isSmallDevice ? 80 : 100),
+                    height: scale(isSmallDevice ? 80 : 100),
+                  },
+                ]}
+                source={{
+                  uri: `https://openweathermap.org/img/wn/${weatherData.icon}@4x.png`,
+                }}
+              />
             </View>
+
+            <Text
+              style={[
+                styles.description,
+                {
+                  fontSize: responsiveFontSize(isSmallDevice ? 14 : 16),
+                  color: theme.colors.text,
+                },
+              ]}
+            >
+              {weatherData.description}
+            </Text>
 
             <View
               style={[
-                styles.detailItem,
-                isSmallDevice &&
-                  !isLandscape && {
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    marginBottom: 8,
-                  },
+                styles.detailsContainer,
+                {
+                  flexDirection:
+                    isSmallDevice && !isLandscape ? 'column' : 'row',
+                  alignItems:
+                    isSmallDevice && !isLandscape ? 'stretch' : 'center',
+                  borderTopColor: theme.colors.border,
+                },
               ]}
             >
-              <Text
+              <View
                 style={[
-                  styles.detailLabel,
-                  { color: theme.colors.text + '99' },
+                  styles.detailItem,
+                  isSmallDevice &&
+                    !isLandscape && {
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      marginBottom: 8,
+                    },
                 ]}
               >
-                濕度
-              </Text>
-              <Text style={[styles.detailValue, { color: theme.colors.text }]}>
-                {weatherData.humidity}%
-              </Text>
-            </View>
+                <Text
+                  style={[
+                    styles.detailLabel,
+                    { color: theme.colors.text + '99' },
+                  ]}
+                >
+                  體感溫度
+                </Text>
+                <Text
+                  style={[styles.detailValue, { color: theme.colors.text }]}
+                >
+                  {weatherData.feelsLike}
+                  {temperatureUnit}
+                </Text>
+              </View>
 
-            <View
-              style={[
-                styles.detailItem,
-                isSmallDevice &&
-                  !isLandscape && {
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                  },
-              ]}
-            >
-              <Text
+              <View
                 style={[
-                  styles.detailLabel,
-                  { color: theme.colors.text + '99' },
+                  styles.detailItem,
+                  isSmallDevice &&
+                    !isLandscape && {
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      marginBottom: 8,
+                    },
                 ]}
               >
-                風速
-              </Text>
-              <Text style={[styles.detailValue, { color: theme.colors.text }]}>
-                {weatherData.windSpeed} m/s
-              </Text>
+                <Text
+                  style={[
+                    styles.detailLabel,
+                    { color: theme.colors.text + '99' },
+                  ]}
+                >
+                  濕度
+                </Text>
+                <Text
+                  style={[styles.detailValue, { color: theme.colors.text }]}
+                >
+                  {weatherData.humidity}%
+                </Text>
+              </View>
+
+              <View
+                style={[
+                  styles.detailItem,
+                  isSmallDevice &&
+                    !isLandscape && {
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                    },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.detailLabel,
+                    { color: theme.colors.text + '99' },
+                  ]}
+                >
+                  風速
+                </Text>
+                <Text
+                  style={[styles.detailValue, { color: theme.colors.text }]}
+                >
+                  {weatherData.windSpeed} m/s
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
+        </ScaleBounce>
       </SlideIn>
     </FadeIn>
   )
