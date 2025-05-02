@@ -15,7 +15,7 @@ A simple weather application built with React Native, providing weather informat
 
 ## Introduction
 
-WeatherApp is a React Native app designed to provide weather information using the OpenWeatherMap API. It allows users to view weather data for their current location or search for a different city. The app also provides customization options for units and cities.
+WeatherApp is a React Native app designed to provide weather information using the OpenWeatherMap API. It allows users to view weather data for their current location or search for a different city. The app features a responsive UI with dark mode support, smooth animations, and provides customization options for units and display preferences.
 
 ## Technologies
 
@@ -45,6 +45,7 @@ WeatherApp is a React Native app designed to provide weather information using t
 
 - **react-native-vector-icons** 10.2.0
 - Custom responsive system (based on Dimensions API)
+- Custom animation system
 
 ### Location Services
 
@@ -71,17 +72,19 @@ Follow these steps to set up the project:
    npm install
    ```
 
-3. Set up the Android environment by following the React Native documentation.
+3. Set up environment variables:
 
-4. Run the app on Android:
+   - Create a `.env` file in the root directory
+   - Add your OpenWeatherMap API key:
+     ```
+     WEATHER_API_KEY=your_api_key_here
+     ```
 
+4. Set up the Android environment by following the React Native documentation.
+
+5. Run the app on Android:
    ```bash
    npm run android
-   ```
-
-5. For iOS (if needed), you can use:
-   ```bash
-   npm run ios
    ```
 
 ## Project Structure
@@ -95,12 +98,17 @@ WeatherApp/
 │   ├── components/               # Reusable components
 │   │   ├── WeatherCard.tsx       # Weather information card
 │   │   ├── SearchBar.tsx         # Search input component
+│   │   ├── animations/           # Animation components
+│   │   │   ├── FadeIn.tsx        # Fade-in animation component
+│   │   │   ├── SlideIn.tsx       # Slide-in animation component
+│   │   │   └── ScaleBounce.tsx   # Scale bounce animation component
 │   │   └── common/               # Common UI components
 │   │       ├── StatusDisplay.tsx # Unified status display component
-│   │       ├── LoadingIndicator.tsx # Loading indicator component
+│   │       ├── LoadingIndicator.tsx # Custom loading indicator component
 │   │       └── ErrorDisplay.tsx  # Error display component
 │   ├── contexts/                 # Context API related
-│   │   └── SettingsContext.tsx   # Settings management context
+│   │   ├── SettingsContext.tsx   # Settings management context
+│   │   └── ThemeContext.tsx      # Theme management (dark/light mode)
 │   ├── hooks/                    # Custom React Hooks
 │   │   └── useLocation.ts        # Location services hook
 │   ├── navigation/               # Navigation related
@@ -112,6 +120,8 @@ WeatherApp/
 │   │   ├── SettingsScreen.tsx    # Settings page
 │   │   ├── WeatherDetailScreen.tsx # Weather details page
 │   │   └── ForecastScreen.tsx    # Forecast page
+│   ├── theme/                    # Theme related
+│   │   └── theme.ts              # Theme definitions and configuration
 │   ├── types/                    # Type definitions
 │   │   └── settings.ts           # Settings related types
 │   └── utils/                    # Utility functions
@@ -132,29 +142,35 @@ WeatherApp/
   - Temperature unit toggle (Celsius/Fahrenheit)
   - Default city configuration
   - Option to use current location on startup
+- **Theme System**:
+  - Dark mode support
+  - Light mode support
+  - System theme detection
+  - Theme persistence
+- **Animations**:
+  - Smooth fade-in animations
+  - Directional slide-in animations
+  - Elastic scale animations
+  - Custom loading indicators
+  - Sequential animations
 - **Responsive Design**: Adapts to different device sizes and screen orientations
 - **Pull-to-Refresh**: Support for refreshing weather data with pull-down gesture
 
 ## Screenshots
 
 - **Home Screen**
-
   ![Home Screen](screenshots/home-screen.png)
 
 - **Search Screen**
-
   ![Search Screen](screenshots/search-screen.png)
 
 - **Settings Screen**
-
   ![Settings Screen](screenshots/settings-screen.png)
 
 - **Weather Details Screen**
-
   ![Detail Screen](screenshots/detail-screen.png)
 
 - **Forecast Screen**
-
   ![Forecast Screen](screenshots/forecast-screen.png)
 
 ## Contributing
