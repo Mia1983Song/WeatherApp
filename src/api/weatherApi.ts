@@ -28,6 +28,14 @@ export interface WeatherDetailData extends WeatherData {
 const API_KEY = OPENWEATHERMAP_API_KEY
 const BASE_URL = 'https://api.openweathermap.org/data/2.5'
 
+const assertApiKey = () => {
+  if (!API_KEY || API_KEY === 'your_api_key_here') {
+    throw new Error('Missing OpenWeatherMap API key in .env (OPENWEATHERMAP_API_KEY).')
+  }
+  // Log length only to avoid leaking the key in logs.
+  console.log(`OpenWeatherMap API key loaded (length=${API_KEY.length})`)
+}
+
 // 格式化 API 返回的數據
 const formatWeatherData = (data: any): WeatherData => {
   return {
@@ -46,6 +54,7 @@ const formatWeatherData = (data: any): WeatherData => {
 // 統一 API 請求處理
 const fetchWeatherData = async (url: string): Promise<any> => {
   try {
+    assertApiKey()
     const response = await fetch(url)
 
     if (!response.ok) {
